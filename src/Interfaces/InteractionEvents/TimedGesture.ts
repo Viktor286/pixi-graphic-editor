@@ -1,7 +1,7 @@
 import StageEvents, { StageEvent } from './StageEvents';
 import FlowApp from '../FlowApp';
 import BoardElement from '../BoardElement';
-import { IScreenCoords, IWorldCoords } from '../Viewport';
+import { IScreenCoords, IWorldCoords } from '../GraphicsEngine';
 
 interface IGestureEvent extends StageEvent {
   screenClick: IScreenCoords;

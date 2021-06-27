@@ -1,6 +1,6 @@
 import FlowApp from '../../Interfaces/FlowApp';
-import { IWorldCoords } from '../../Interfaces/Viewport';
 import BoardElement from '../../Interfaces/BoardElement';
+import { IWorldCoords } from '../../Interfaces/GraphicsEngine';
 
 export default class ViewportActions {
   private runAheadZoomIn = 0;
@@ -53,7 +53,7 @@ export default class ViewportActions {
       'viewport',
       this.app.viewport.viewportPropsConversion(
         zoomPoint,
-        this.app.viewport.getNextScaleStepUp(this.runAheadZoomIn),
+        this.app.viewport.zoomScales.getNextScaleStepUp(this.app.viewport.scaleX, this.runAheadZoomIn),
       ),
       { async: 'animation' },
     );
@@ -80,7 +80,7 @@ export default class ViewportActions {
       'viewport',
       this.app.viewport.viewportPropsConversion(
         zoomPoint,
-        this.app.viewport.getNextScaleStepDown(this.runAheadZoomOut),
+        this.app.viewport.zoomScales.getNextScaleStepDown(this.app.viewport.scaleX, this.runAheadZoomOut),
       ),
       { async: 'animation' },
     );

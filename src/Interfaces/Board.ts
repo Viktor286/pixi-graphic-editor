@@ -2,8 +2,8 @@ import FlowApp from './FlowApp';
 import BoardElement from './BoardElement';
 import Memo, { IMemoSettings } from './Memo';
 import Group, { IGroupSettings } from './Group';
-import Viewport, { IWorldCoords } from './Viewport';
-import { CgEngine } from './GraphicsEngine';
+import { CgEngine, IWorldCoords } from './GraphicsEngine';
+import Viewport from './Viewport';
 
 export type BoardElementId = string | undefined;
 export type BoardElementType = 'BoardElement' | 'Memo' | 'Group';

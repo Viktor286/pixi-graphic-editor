@@ -1,7 +1,6 @@
 import Group from './Group';
-import { IWorldCoords } from './Viewport';
 import Board, { BoardElementId, BoardElementType } from './Board';
-import { CgDrawContainer, CgInteractiveContainer, animateCgObject } from './GraphicsEngine';
+import { CgDrawContainer, CgInteractiveContainer, animateCgObject, IWorldCoords } from './GraphicsEngine';
 
 export interface IBoardElementPublicState {
   id: BoardElementId;

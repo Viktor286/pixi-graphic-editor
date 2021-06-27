@@ -1,9 +1,8 @@
 import BoardElement from './BoardElement';
 // import { ITransforms } from '../types/global';
-import { IWorldCoords } from './Viewport';
 // import Memo from './Memo';
 import Board, { BoardElementId } from './Board';
-import { CgBaseObject } from './GraphicsEngine';
+import { CgBaseObject, IWorldCoords } from './GraphicsEngine';
 
 export interface IGroupSettings {
   isTempGroup: boolean;

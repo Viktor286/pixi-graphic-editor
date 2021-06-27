@@ -1,7 +1,7 @@
 import FlowApp from '../../Interfaces/FlowApp';
-import { IWorldCoords } from '../../Interfaces/Viewport';
 import BoardElement from '../../Interfaces/BoardElement';
 import { ShiftModeState } from '../../Interfaces/Board';
+import { IWorldCoords } from '../../Interfaces/GraphicsEngine';
 // import Group from '../../Interfaces/Group';
 
 export default class BoardActions {

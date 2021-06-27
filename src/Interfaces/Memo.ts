@@ -1,7 +1,7 @@
 import { ImageMedia, TMediaSource } from './MediaResource';
 import BoardElement, { IBoardElementPublicState } from './BoardElement';
-import { IWorldCoords } from './Viewport';
 import Board, { BoardElementId } from './Board';
+import { IWorldCoords } from './GraphicsEngine';
 
 export interface IMemoSettings {
   mediaSource: TMediaSource;

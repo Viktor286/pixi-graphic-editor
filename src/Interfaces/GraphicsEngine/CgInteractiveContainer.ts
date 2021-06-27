@@ -1,7 +1,7 @@
 import { CgContainer } from './CgContainer';
-import { CgEngine } from './CgEngine';
-import Viewport, { IWorldCoords } from '../Viewport';
+import { CgEngine, IWorldCoords } from './CgEngine';
 import { IPoint } from '../../types/global';
+import Viewport from '../Viewport';
 
 export class CgInteractiveContainer extends CgContainer {
   public engine: CgEngine;

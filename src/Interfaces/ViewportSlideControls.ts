@@ -1,14 +1,14 @@
-import FlowApp from '../FlowApp';
-import Viewport from '../Viewport';
+import FlowApp from './FlowApp';
+import Viewport from './Viewport';
 
-export default class SlideControls {
+export default class ViewportSlideControls {
   public activated = false;
   public isSliding = false;
   private moveEndTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(public app: FlowApp, public viewport: Viewport) {}
 
-  public addSlideControls() {
+  public installSlideControls() {
     this.viewport.instance
       .drag()
       .pinch({
@@ -21,16 +21,26 @@ export default class SlideControls {
         minSpeed: 0.05,
       })
       .clampZoom({
-        minScale: this.viewport.zoomScales[0],
-        maxScale: this.viewport.zoomScales[this.viewport.zoomScales.length - 1],
+        minScale: this.viewport.zoomScales.steps[0],
+        maxScale: this.viewport.zoomScales.steps[this.viewport.zoomScales.steps.length - 1],
       });
 
     // Both "moved-end" and 'zoomed-end' events have not stable debounce, firing often than should be.
     // It was decided to use only 'moved' callback for everything
     this.viewport.instance.on('moved', this.onSliderMoved);
     this.viewport.instance.on('zoomed', this.onSliderZoomed);
-
     this.activated = true;
+  }
+
+  public uninstallSlideControls() {
+    this.viewport.instance.plugins.remove('drag');
+    this.viewport.instance.plugins.remove('pinch');
+    this.viewport.instance.plugins.remove('wheel');
+
+    this.viewport.instance.off('moved', this.onSliderMoved);
+    this.viewport.instance.off('zoomed', this.onSliderZoomed);
+
+    this.activated = false;
   }
 
   public pauseSlideControls() {
@@ -47,20 +57,8 @@ export default class SlideControls {
     this.activated = true;
   }
 
-  public removeSlideControls() {
-    this.viewport.instance.plugins.remove('drag');
-    this.viewport.instance.plugins.remove('pinch');
-    this.viewport.instance.plugins.remove('wheel');
-
-    this.viewport.instance.off('moved', this.onSliderMoved);
-    this.viewport.instance.off('zoomed', this.onSliderZoomed);
-
-    this.activated = false;
-  }
-
   private onSliderMoved = () => {
     if (!this.isSliding) {
-      // console.log('onSliderStart');
       this.isSliding = true;
     }
 
@@ -68,28 +66,21 @@ export default class SlideControls {
       clearTimeout(this.moveEndTimer);
     }
 
-    // console.log('onSliderMoved');
     this.app.gui.stageBackTile.updateGraphics();
 
     this.moveEndTimer = setTimeout(this.onSliderEnd, 300); // lower than 300 values start throw doubles
   };
 
   private onSliderEnd = () => {
-    // console.log('onSliderEnd');
-
     setTimeout(() => {
       this.isSliding = false;
     }, 200);
-
-    // TODO: Can we avoid this workaround for stateManager?
-    //  option: observable isSliding
-    // this.app.stateManager.actions.viewport.amendViewportState();
   };
 
   private onSliderZoomed = () => {
     if (
-      this.app.viewport.scale < this.viewport.zoomScales[this.viewport.zoomScales.length - 1] &&
-      this.app.viewport.scale > this.viewport.zoomScales[0]
+      this.app.viewport.scale < this.viewport.zoomScales.steps[this.viewport.zoomScales.steps.length - 1] &&
+      this.app.viewport.scale > this.viewport.zoomScales.steps[0]
     ) {
       this.app.board.updateSelectionGraphics();
       this.app.webUi.updateZoomBtn();

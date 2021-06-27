@@ -1,47 +1,41 @@
-import * as PIXI from 'pixi.js';
-import { CgEngine } from './GraphicsEngine';
+// PIXI documentation: https://pixijs.download/dev/docs/PIXI.html
+//
+// Code Examples:
+// sprite = new PIXI.Sprite(PIXI.loader.resources["images/anyImage.png"].texture);
+// base = new PIXI.BaseTexture(anyImageObject),
+// texture = new PIXI.Texture(base),
+// sprite = new PIXI.Sprite(texture);
 import { Viewport as PixiViewport } from 'pixi-viewport';
+import ViewportSlideControls from './ViewportSlideControls';
+import ViewportZoomScales from './ViewportZoomScales';
 import FlowApp from './FlowApp';
 import { StageEvent } from './InteractionEvents/StageEvents';
-import SlideControls from './InteractionEvents/SlideControls';
-import { gsap } from 'gsap';
+import PIXI from 'pixi.js';
 import BoardElement from './BoardElement';
-
-export interface IWorldCoords {
-  wX: number;
-  wY: number;
-}
-
-export interface IScreenCoords {
-  sX: number;
-  sY: number;
-}
+import { gsap } from 'gsap';
+import { IScreenCoords, IWorldCoords } from './GraphicsEngine';
 
 export default class Viewport {
   public readonly instance: PixiViewport;
-  public readonly engine: CgEngine;
-  public readonly slideControls: SlideControls;
-  public readonly zoomScales: number[] = [0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32];
+  public readonly slideControls: ViewportSlideControls;
+  public readonly zoomScales = new ViewportZoomScales();
   public readonly fitAreaMarginPercent = 20;
 
   [key: string]: any;
 
   constructor(public app: FlowApp) {
-    this.engine = app.engine;
-
     this.instance = new PixiViewport({
-      screenWidth: this.app.hostHTMLWidth,
-      screenHeight: this.app.hostHTMLHeight,
-      worldWidth: this.app.hostHTMLWidth,
-      worldHeight: this.app.hostHTMLHeight,
-      interaction: this.engine.instance.renderer.plugins.interaction, // the interaction module is important for wheel to work properly when renderer.view is placed or scaled
+      screenWidth: 100,
+      screenHeight: 100,
+      worldWidth: 100,
+      worldHeight: 100,
+      // interaction: this.engine.instance.renderer.plugins.interaction, // the interaction module is important for wheel to work properly when renderer.view is placed or scaled
     });
 
-    app.engine.addDisplayObject(this.instance);
     this.instance.sortableChildren = true;
 
-    this.slideControls = new SlideControls(this.app, this);
-    this.slideControls.addSlideControls();
+    this.slideControls = new ViewportSlideControls(this.app, this);
+    this.slideControls.installSlideControls();
 
     window.addEventListener('contextmenu', (e) => {
       e.preventDefault();
@@ -49,6 +43,7 @@ export default class Viewport {
 
     // Handler for "pixi engine and Viewport" dimensions dependency on window size
     window.addEventListener('resize', this.resizeViewportHandler);
+    setTimeout(() => this.resizeViewportHandler());
     // window.addEventListener('orientationchange', this.orientationchangeViewportHandler, false);
 
     // For preventing page zoom you should prevent wheel event:
@@ -86,6 +81,14 @@ export default class Viewport {
     return this.instance.scale.x;
   }
 
+  get scaleX() {
+    return this.instance.scale.x;
+  }
+
+  get scaleY() {
+    return this.instance.scale.y;
+  }
+
   set screenWidth(val: number) {
     this.instance.screenWidth = val;
   }
@@ -113,14 +116,18 @@ export default class Viewport {
   public resizeViewportHandler = (): void => {
     // solution ref: https://github.com/davidfig/pixi-viewport/issues/212#issuecomment-608231281
     if (
-      this.app.engine.screenWidth !== this.app.hostHTMLWidth ||
-      this.app.engine.screenHeight !== this.app.hostHTMLHeight
+      this.app.engine.renderScreenWidth !== this.app.hostHTMLWidth ||
+      this.app.engine.renderScreenHeight !== this.app.hostHTMLHeight
     ) {
-      this.app.engine.renderer.resize(this.app.hostHTMLWidth, this.app.hostHTMLHeight);
-      this.instance.resize(this.app.hostHTMLWidth, this.app.hostHTMLHeight);
-      this.app.gui.stageBackTile.updateDimensions(this.app.hostHTMLWidth, this.app.hostHTMLHeight);
+      this.app.engine.resizeRenderScreen(this.app.hostHTMLWidth, this.app.hostHTMLHeight);
+      this.resizeViewport(this.app.hostHTMLWidth, this.app.hostHTMLHeight);
     }
   };
+
+  public resizeViewport(width: number, height: number) {
+    this.instance.resize(width, height);
+    this.app.gui.stageBackTile.updateDimensions(width, height);
+  }
 
   public getScreenCoordsFromEvent(e: StageEvent): IScreenCoords {
     return { sX: e.data.global.x, sY: e.data.global.y };
@@ -129,67 +136,6 @@ export default class Viewport {
   public getWorldScreenCoordsFromEvent(e: StageEvent): IWorldCoords {
     const screenClick: IScreenCoords = this.getScreenCoordsFromEvent(e);
     return this.screenToWorld(screenClick);
-  }
-
-  public getNextScaleStepDown(runAhead: number): number {
-    const currentScale = this.instance.scale.x;
-
-    for (let i = 0; i < this.zoomScales.length; i++) {
-      const firstStep = this.zoomScales[0];
-      if (currentScale <= firstStep) {
-        return firstStep;
-      }
-
-      const lastStep = this.zoomScales[this.zoomScales.length - 1];
-      if (currentScale > lastStep) {
-        return this.zoomScales[this.zoomScales.length - (1 - runAhead)];
-      }
-
-      if (currentScale === this.zoomScales[i]) {
-        return this.zoomScales[i - (1 - runAhead)] || firstStep;
-      }
-
-      if (currentScale > this.zoomScales[i] && currentScale < this.zoomScales[i + 1]) {
-        if (currentScale - this.zoomScales[i] / 2 < this.zoomScales[i]) {
-          // avoid the short jump case when next step less than halfway (without runAhead)
-          return this.zoomScales[i - 1] || firstStep;
-        }
-        return this.zoomScales[i - runAhead] || firstStep;
-      }
-    }
-
-    return 0;
-  }
-
-  public getNextScaleStepUp(runAhead: number): number {
-    const currentScale = this.instance.scale.x;
-
-    for (let i = 0; i < this.zoomScales.length; i++) {
-      const firstStep = this.zoomScales[0];
-      if (currentScale < firstStep) {
-        return this.zoomScales[runAhead];
-      }
-
-      const lastStep = this.zoomScales[this.zoomScales.length - 1];
-      if (currentScale >= lastStep) {
-        return lastStep;
-      }
-
-      if (currentScale === this.zoomScales[i]) {
-        return this.zoomScales[i + (1 + runAhead)] || lastStep;
-      }
-
-      const nextStep = this.zoomScales[i + 1];
-      if (currentScale > this.zoomScales[i] && currentScale < nextStep) {
-        if (currentScale + nextStep / 2 > nextStep) {
-          // avoid the short jump case when next step less than halfway (without runAhead)
-          return this.zoomScales[i + 2] || lastStep;
-        }
-        return this.zoomScales[i + (1 + runAhead)] || lastStep;
-      }
-    }
-
-    return 0;
   }
 
   public addToViewport(displayObject: PIXI.DisplayObject, index: number = 0): PIXI.DisplayObject {
@@ -205,7 +151,7 @@ export default class Viewport {
   }
 
   public getZoomString(): string {
-    return Math.round(this.instance.scale.x * 100).toString();
+    return Math.round(this.x * 100).toString();
   }
 
   public screenToWorld({ sX, sY }: IScreenCoords): IWorldCoords {
@@ -235,15 +181,9 @@ export default class Viewport {
   }
 
   public getWorldCoordsFromMouse(): IWorldCoords {
-    const { x: wX, y: wY } = this.instance.toLocal(
-      this.app.engine.renderer.plugins.interaction.eventData.data.global,
-    );
+    const { sX, sY } = this.app.engine.getScreenCoordsFromMouse();
+    const { x: wX, y: wY } = this.instance.toLocal({ x: sX, y: sY });
     return { wX, wY };
-  }
-
-  public getScreenCoordsFromMouse(): IScreenCoords {
-    const { x: sX, y: sY } = this.app.engine.renderer.plugins.interaction.eventData.data.global;
-    return { sX, sY };
   }
 
   public findScaleFit(width: number, height: number) {
